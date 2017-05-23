@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">FloowTest</string>
+    <string name="title_activity_main">Live Tracking</string>
+    <string name="title_activity_history">Journey List</string>
+    <string name="title_activity_journey_map">Journey</string>
+    <string name="history">History</string>
+    <string name="confirm_action">Confirm Action</string>
+    <string name="abort_track">Track location aborted</string>
+    <string name="action_delete">DELETE</string>
+    <string name="no_item_available">No journey to show.</string>
+</resources>
