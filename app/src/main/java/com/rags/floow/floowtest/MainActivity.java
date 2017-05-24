@@ -46,6 +46,7 @@ import java.util.ArrayList;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, ViewTreeObserver.OnGlobalLayoutListener {
 
+    //Instance of google map to show current journey
     private GoogleMap mMap;
     public static String ACTION_UPDATE = "ACTION_UPDATE";
     public static String INTERVAL_KEY = "INTERVAL_KEY";
@@ -68,6 +69,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
+            //Receives location update notification from Location service
             if(intent.getAction().equals(ACTION_UPDATE) && mapReady) {
                 new HandleLocationUpdateTask().execute();
             }
@@ -82,6 +84,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         boolean isGPSEnabled = manager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         boolean isNetworkEnabled = manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER);
 
+
+        //This app nrequires location service on and location permission allowed for the app for SDK >= 23. Ensure they are available on each resume of the app.
         if(Build.VERSION.SDK_INT > 22 && (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_DENIED && checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_DENIED))
             trackerState.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorRed)));
         else if(!isGPSEnabled && !isNetworkEnabled)
@@ -91,6 +95,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         else
             trackerState.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorGray)));
 
+        //Update map on each resume from background only if there is an update.
         if(requiresUpdate) {
             requiresUpdate = false;
             if(mapReady)
@@ -201,6 +206,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            //Handle when user clicks the history action button
             case R.id.action_history:
                 startActivity(new Intent(this, HistoryActivity.class));
                 return true;
@@ -214,6 +220,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         mapFragment.getView().getViewTreeObserver().addOnGlobalLayoutListener(this);
     }
 
+    //Only when the global layout is ready, update map
     @Override
     public void onGlobalLayout() {
         mapFragment.getView().getViewTreeObserver().removeOnGlobalLayoutListener(this);
@@ -221,13 +228,17 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+    //Handle when location permission is allowed or denied by the user
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         Boolean locationPermissionGranted = false;
+
         for(int i=0; i< grantResults.length; i++)
             if(grantResults[i] == 0)
                 locationPermissionGranted = true;
+
+        //Change the color of floating action button based on user action
         if(locationPermissionGranted) {
             if(Util.getGPSTrackerState(pref))
                 trackerState.setBackgroundTintList(ColorStateList.valueOf(getResources().getColor(R.color.colorGreen)));
@@ -238,6 +249,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     }
 
+    //Asynchronously updates current position in map view when location updates
     private class HandleLocationUpdateTask extends AsyncTask<Void, Void, Cursor> {
 
         @Override
@@ -245,6 +257,8 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             int tripID = Util.getTripID(pref);
             SQLiteDatabase db = new FloowDbHelper(MainActivity.this).getWritableDatabase();
             String[] projection = {FloowContract.LocationEntry.COLUMN_NAME_LATITUDE, FloowContract.LocationEntry.COLUMN_NAME_LONGITUDE, FloowContract.LocationEntry.COLUMN_NAME_TIME_STAMP};
+
+            //Return a cursor containing all the enties of current journey
             return db.query(FloowContract.LocationEntry.TABLE_NAME, projection, FloowContract.LocationEntry.COLUMN_NAME_TRIP_ID + "=?", new String[] {String.valueOf(tripID)}, null, null, null);
         }
 
@@ -252,6 +266,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             if (result != null && result.getCount() >0) {
                 result.moveToFirst();
                 mMap.clear();
+                //collect points to draw line between
                 PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
                 LatLngBounds.Builder builder = new LatLngBounds.Builder();
                 for (int i=0; i< result.getCount(); i++) {
@@ -263,6 +278,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     options.add(point);
                     builder.include(point);
                     if(i == result.getCount()-1) {
+                        //mark last point as current location as they are in assending order of _id
                         LatLng currentLocation = new LatLng(latitude, longitude);
                         mMap.addMarker(new MarkerOptions().position(currentLocation).title(label).icon(BitmapDescriptorFactory.fromResource(R.drawable.current_location)));
                         label = result.getString(result.getColumnIndex(FloowContract.LocationEntry.COLUMN_NAME_TIME_STAMP));
@@ -271,6 +287,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
                 mMap.addPolyline(options);
 
+                //Ensure the map is zoomed to correct level that all entries are visible
                 LatLngBounds bounds = builder.build();
                 int padding = 10;
                 CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);

@@ -70,12 +70,14 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
         helper = new FloowDbHelper(this);
         db = helper.getWritableDatabase();
 
+        //Connect to google location polling service with in the device
         mGoogleAPiClient = new GoogleApiClient.Builder(this)
                 .addApi(LocationServices.API)
                 .addConnectionCallbacks(this)
                 .addOnConnectionFailedListener(this).build();
         mGoogleAPiClient.connect();
 
+        //register to the interval change broadcast action. Interval is set to 10 seconds while app is in foreground and 60 seconds otherwise to prevent battery drain
         registerReceiver(receiver, new IntentFilter(MainActivity.ACTION_CHANGE_INTERVAL));
         return super.onStartCommand(intent, flags, startId);
     }
@@ -83,6 +85,7 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
     @Override
     public void onDestroy() {
         super.onDestroy();
+        //disconnect subscription from location polling service when the service is destroyed
         mGoogleAPiClient.disconnect();
         unregisterReceiver(receiver);
     }
@@ -94,6 +97,7 @@ public class LocationService extends Service implements GoogleApiClient.Connecti
 
     @Override
     public void onConnected(Bundle bundle) {
+        //only request location updates if the location permission is granted for the app. User can change this value at anytime in SDK >= 23
         if(Build.VERSION.SDK_INT <= 22 || (Build.VERSION.SDK_INT > 22 && (checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == PackageManager.PERMISSION_GRANTED || checkSelfPermission(Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED)))
         {
             //Insert location to database

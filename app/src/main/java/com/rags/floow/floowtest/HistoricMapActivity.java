@@ -31,6 +31,7 @@ import java.util.List;
 
 public class HistoricMapActivity extends AppCompatActivity implements OnMapReadyCallback, ViewTreeObserver.OnGlobalLayoutListener {
 
+    //Instance of google map to show the journey
     private GoogleMap mMap;
     SupportMapFragment mapFragment;
     int tripID;
@@ -54,6 +55,8 @@ public class HistoricMapActivity extends AppCompatActivity implements OnMapReady
         mapFragment.getView().getViewTreeObserver().addOnGlobalLayoutListener(this);
     }
 
+
+    //Only when the global layout is ready, update map
     @Override
     public void onGlobalLayout() {
         mapFragment.getView().getViewTreeObserver().removeOnGlobalLayoutListener(this);
@@ -62,6 +65,7 @@ public class HistoricMapActivity extends AppCompatActivity implements OnMapReady
             new LoadJourneyTask().execute();
     }
 
+    //Load journey asynchronously to seperate business logic from UI thread and prevent UI lag
     private class LoadJourneyTask extends AsyncTask<Void, Void, Cursor> {
 
         @Override
@@ -72,6 +76,7 @@ public class HistoricMapActivity extends AppCompatActivity implements OnMapReady
         }
 
         protected void onPostExecute(Cursor result) {
+            //Make sure the result is not null and not empty before attempting to populate
             if (result != null && result.getCount() >0) {
 
                 PolylineOptions options = new PolylineOptions().width(5).color(Color.BLUE).geodesic(true);
@@ -87,11 +92,13 @@ public class HistoricMapActivity extends AppCompatActivity implements OnMapReady
                     options.add(point);
                     builder.include(point);
 
+                    //mark first point as start as they are in assending order of _id
                     if(i == 0) {
                         LatLng start = new LatLng(latitude, longitude);
                         mMap.addMarker(new MarkerOptions().position(start).title("start").icon(BitmapDescriptorFactory.fromResource(R.drawable.current_location)));
                     }
 
+                    //mark last point as end as they are in assending order of _id
                     if(i == result.getCount()-1) {
                         LatLng end = new LatLng(latitude, longitude);
                         mMap.addMarker(new MarkerOptions().position(end).title("end").icon(BitmapDescriptorFactory.fromResource(R.drawable.current_location)));
@@ -100,6 +107,7 @@ public class HistoricMapActivity extends AppCompatActivity implements OnMapReady
 
                 mMap.addPolyline(options);
 
+                //Ensure the map is zoomed to correct level that all entries are visible
                 LatLngBounds bounds = builder.build();
                 int padding = 10;
                 CameraUpdate cu = CameraUpdateFactory.newLatLngBounds(bounds, padding);

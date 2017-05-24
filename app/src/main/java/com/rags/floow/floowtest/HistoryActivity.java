@@ -34,6 +34,8 @@ public class HistoryActivity extends AppCompatActivity implements OnItemClickLis
         new GetHistoryTask().execute();
      }
 
+
+    //Handle on click event of list item
     @Override
     public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
         History history = (History)parent.getAdapter().getItem(position);
@@ -43,6 +45,7 @@ public class HistoryActivity extends AppCompatActivity implements OnItemClickLis
     }
 
 
+    //Populate Jorney list asynchronously
     private class GetHistoryTask extends AsyncTask<Void, Void, ArrayList<History>> {
 
         @Override
@@ -68,6 +71,7 @@ public class HistoryActivity extends AppCompatActivity implements OnItemClickLis
         }
 
         protected void onPostExecute(ArrayList<History> histories) {
+            //if list is not empty populate the list
             if(histories != null) {
                 historyListview.setVisibility(View.VISIBLE);
                 emptyList.setVisibility(View.GONE);
@@ -75,7 +79,7 @@ public class HistoryActivity extends AppCompatActivity implements OnItemClickLis
                 HistoryAdapter adapter = new HistoryAdapter(HistoryActivity.this, histories);
                 historyListview.setAdapter(adapter);
                 historyListview.setOnItemClickListener(HistoryActivity.this);
-            } else {
+            } else { // If list is empty, show message that there is no journey to show
                 historyListview.setVisibility(View.GONE);
                 emptyList.setVisibility(View.VISIBLE);
             }
